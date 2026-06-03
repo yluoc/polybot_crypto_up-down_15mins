@@ -1,0 +1,48 @@
+[package]
+name = "polybot"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "polybot"
+path = "src/lib.rs"
+
+[[bin]]
+name = "polybot"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"] }
+num-bigint = "0.4"
+polymarket_client_sdk_v2 = { version = "0.5", features = ["clob", "ws", "gamma", "bridge", "ctf"] }
+scraper = "0.19"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+regex = "1"
+clap = { version = "4", features = ["derive", "env"] }
+dotenvy = "0.15"
+hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+futures = "0.3.32"
+rust_decimal = "1.41.0"
+rust_decimal_macros = "1.40.0"
+alloy = { version = "1", features = ["signer-local", "signers"], default-features = false }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-native-roots"] }
+sqlx-postgres = "0.8.6"
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "migrate"] }
+chrono = { version = "0.4", features = ["serde"] }
+lightgbm3 = "1"
+rustls = { version = "0.23", default-features = false, features = ["aws-lc-rs"] }
+
+[dev-dependencies]
+proptest = "1"
+
+[features]
+# Opt-in: build & run the legacy 70-feature C++-parity regression test.
+# Enable with `cargo test --features legacy_70`. Off by default because
+# the live FEATURE_DIM is now 16 and the legacy fixture is frozen at 10.
+legacy_70 = []

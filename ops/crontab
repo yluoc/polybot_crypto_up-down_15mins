@@ -1,0 +1,2 @@
+# Daily 00:10 UTC rolling retrain: backfill → backfill-outcomes → retrain.
+10 0 * * * /usr/local/bin/polybot cron

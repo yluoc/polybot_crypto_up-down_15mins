@@ -1,0 +1,15 @@
+[Unit]
+Description=Polybot rolling LightGBM retrain (daily)
+Requires=retrain.service
+
+[Timer]
+# 00:10 UTC daily, a few minutes after the 00:00 candle close.
+OnCalendar=*-*-* 00:10:00 UTC
+# If the machine was off at trigger time, run on next boot.
+Persistent=true
+# Small random delay to avoid synchronised OKX hits across multiple hosts.
+RandomizedDelaySec=120
+Unit=retrain.service
+
+[Install]
+WantedBy=timers.target

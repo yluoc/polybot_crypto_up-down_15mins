@@ -1,0 +1,15 @@
+[Unit]
+Description=Polybot rolling LightGBM retrain
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/polybot_crypto_15mins
+EnvironmentFile=/opt/polybot_crypto_15mins/.env
+ExecStartPre=/usr/local/bin/polybot backfill
+ExecStart=/usr/local/bin/polybot retrain
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+NoNewPrivileges=true

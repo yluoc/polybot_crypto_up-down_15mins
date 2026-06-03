@@ -1,0 +1,16 @@
+[Unit]
+Description=Polybot Rust Trading Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/polybot_crypto_15mins
+EnvironmentFile=/opt/polybot_crypto_15mins/.env
+ExecStart=/usr/local/bin/polybot run
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
