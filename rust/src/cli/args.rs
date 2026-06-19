@@ -41,7 +41,7 @@ pub enum Command {
     /// for every bucket in the lookback window.
     BackfillMacro(BackfillMacroArgs),
 
-    /// v14 (Phase 2 audit #5): pull aggregated OI + liquidation history
+    /// Pull aggregated OI + liquidation history
     /// from Coinalyze for the last `--days` and upsert into
     /// `open_interest_aggregated` / `liquidations_aggregated`. Requires
     /// COINALYZE_API_KEY env var. Coinalyze retention floor is ~20 days
@@ -50,10 +50,10 @@ pub enum Command {
     /// until the 180-day training window is fully covered).
     BackfillCoinalyze(BackfillCoinalyzeArgs),
 
-    /// v14: pull OKX taker buy/sell volume for the last `--days` and
-    /// upsert into `taker_volume_15m`. Aggregates the underlying 5m
-    /// OKX response into 15-min buckets matching `CANDLE_INTERVAL_MS`.
-    /// No env var required (public endpoint).
+    /// Pull OKX taker buy/sell volume for the last `--days` and
+    /// upsert into `taker_volume_15m`. Fetches OKX `period=15m` directly,
+    /// aligned to `CANDLE_INTERVAL_MS` buckets (the still-forming current
+    /// bucket is dropped). No env var required (public endpoint).
     BackfillTaker(BackfillTakerArgs),
 
     /// Nightly chain: backfill → backfill-outcomes → backfill-macro →
