@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS candles (
     tick_count INTEGER          NOT NULL,
     PRIMARY KEY (inst_id, ts_ms)
 );
-CREATE INDEX IF NOT EXISTS candles_ts_ms_idx   ON candles (ts_ms);
-CREATE INDEX IF NOT EXISTS candles_inst_ts_idx ON candles (inst_id, ts_ms);
+
+CREATE INDEX IF NOT EXISTS candles_ts_ms_idx ON candles (ts_ms);
 
 -- ── signals ──────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS signals (
@@ -135,8 +135,6 @@ CREATE TABLE IF NOT EXISTS window_outcomes (
     resolved_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     PRIMARY KEY (symbol, window_ts_secs)
 );
-CREATE INDEX IF NOT EXISTS window_outcomes_symbol_ts
-    ON window_outcomes (symbol, window_ts_secs);
 
 -- ── cron_runs (nightly chain lifecycle ledger) ───────────────────────────────-
 CREATE TABLE IF NOT EXISTS cron_runs (
@@ -164,8 +162,7 @@ CREATE TABLE IF NOT EXISTS funding_rates (
     settle_period_secs INTEGER,                      -- NULL if unknown
     PRIMARY KEY (inst_id, ts_ms)
 );
-CREATE INDEX IF NOT EXISTS funding_rates_ts_ms_idx   ON funding_rates (ts_ms);
-CREATE INDEX IF NOT EXISTS funding_rates_inst_ts_idx ON funding_rates (inst_id, ts_ms);
+CREATE INDEX IF NOT EXISTS funding_rates_ts_ms_idx ON funding_rates (ts_ms);
 
 CREATE TABLE IF NOT EXISTS open_interest (
     inst_id VARCHAR(20)      NOT NULL,            -- swap form, e.g. "BTC-USDT-SWAP"
@@ -174,8 +171,7 @@ CREATE TABLE IF NOT EXISTS open_interest (
     oi_usd  DOUBLE PRECISION NOT NULL,            -- OI in USD
     PRIMARY KEY (inst_id, ts_ms)
 );
-CREATE INDEX IF NOT EXISTS open_interest_ts_ms_idx   ON open_interest (ts_ms);
-CREATE INDEX IF NOT EXISTS open_interest_inst_ts_idx ON open_interest (inst_id, ts_ms);
+CREATE INDEX IF NOT EXISTS open_interest_ts_ms_idx ON open_interest (ts_ms);
 
 CREATE TABLE IF NOT EXISTS index_candles (
     inst_id VARCHAR(20)      NOT NULL,            -- index form, e.g. "BTC-USDT"
@@ -186,8 +182,7 @@ CREATE TABLE IF NOT EXISTS index_candles (
     close   DOUBLE PRECISION NOT NULL,
     PRIMARY KEY (inst_id, ts_ms)
 );
-CREATE INDEX IF NOT EXISTS index_candles_ts_ms_idx   ON index_candles (ts_ms);
-CREATE INDEX IF NOT EXISTS index_candles_inst_ts_idx ON index_candles (inst_id, ts_ms);
+CREATE INDEX IF NOT EXISTS index_candles_ts_ms_idx ON index_candles (ts_ms);
 
 -- ── model_importance (per-prediction feature fingerprint) ────────────────────-
 CREATE TABLE IF NOT EXISTS model_importance (
