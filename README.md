@@ -36,22 +36,32 @@ Each one has its own model — either a LightGBM booster or an L1-regularized lo
 ## How the live pipeline works
 
 ```
-OKX WebSocket (live prices)
+OKX WebSocket (live ticks)
    ↓
 Candle builder (15-min OHLC per instrument)
    ↓
 Feature engineer (89 features, z-score normalized)
    ↓
-ModelHub (4 models — LightGBM or LR-L1 per symbol — picks the one for the target symbol)
+ModelHub (per-symbol LightGBM / LR-L1 / pooled — picks the model for the target symbol)
    ↓
-Confidence filter (skip if below MIN_CONFIDENCE threshold)
+Confidence filter (skip if below MIN_CONFIDENCE, default 0.62)
    ↓
 Market resolver (find the matching Polymarket market via Gamma API)
    ↓
-Order manager (FOK limit buy, notional capped at $25)
+Timing gates (skip if < ENTRY_OFFSET_SECS left in the window, or already traded this window)
+   ↓
+Spread filter (skip if top-of-book spread > MAX_SPREAD_BPS)
+   ↓
+EV gate (skip if expected value per share, net of fee, < EV_MIN_EDGE — disableable via EV_GATE_ENABLED)
+   ↓
+Order manager (FOK limit buy, notional capped by ORDER_MAX_NOTIONAL_USD)
    ↓
 Polymarket CLOB (place the order)
 ```
+
+In `DRY_RUN` mode the pipeline runs end-to-end through the gates but skips the order
+manager and book stream entirely; a background task scores each predicted action
+against the resolved Polymarket outcome into `dry_run_results`.
 
 ---
 
@@ -66,12 +76,14 @@ Key tables:
 - `open_interest_aggregated` / `liquidations_aggregated` / `taker_volume_15m` — microstructure feature inputs (Coinalyze + OKX)
 - `macro_daily` — daily FRED macro series (DXY, SPX, VIX, yields) shared across all instruments
 - `window_outcomes` — how each past 15-min window actually settled on Polymarket
-- `model_versions` + `models` — trained model blobs, one "current" row per symbol
+- `model_versions` + `models` — trained model blobs, one "current" row per symbol (`model_versions.model_family` records which family is serving)
 - `model_importance` — per-prediction feature-importance fingerprint
 - `retrain_diagnostics` — per-symbol retrain quality metrics (accuracy, agreement, gate outcome)
 - `signals` — every prediction the model has made
-- `orders` / `trades` — every order placed
+- `orders` / `trades` / `positions` — every order placed, each closed trade's PnL, and open/closed position state
+- `bot_runs` — per-process run ledger for `polybot run`
 - `cron_runs` — lifecycle ledger for the nightly job
+- `errors` — structured error log (source, context, detail)
 - `dry_run_results` / `dry_run_pending` — tracks predictions vs actual outcomes even when not placing real orders
 
 ---
@@ -96,6 +108,38 @@ The 4 gates that prevent bad models from getting promoted:
 
 - **Process**: one long-running `polybot run` process plus a nightly `polybot cron` invocation (see `ops/` for sample systemd units and a crontab line).
 - **Database**: Postgres.
+
+---
+
+## Configuration
+
+All configuration is via environment variables (loaded from `.env`); see `.env.example` for the full annotated list.
+
+**Required (no default):**
+
+- `DATABASE_URL` — Postgres connection string
+- `POLYMARKET_PRIVATE_KEY` — EOA wallet key that signs orders
+- `POLYMARKET_FUNDER` — proxy wallet address holding USDC.e (orders sign with `SignatureType::Proxy`)
+- `ORDER_MAX_NOTIONAL_USD` — max USDC per order (this is the notional cap — there is no hardcoded `$25`)
+- `FRED_API_KEY` — for the macro backfill
+
+**Optional (with defaults):**
+
+| Var | Default | Purpose |
+|---|---|---|
+| `CRYPTOS` | `btc,eth,sol,xrp` | Symbols to trade (comma-separated, case-insensitive) |
+| `MIN_CONFIDENCE` | `0.62` | Min model confidence to act (sole upstream pre-gate; no HOLD class) |
+| `EV_MIN_EDGE` | `0.02` | Min expected value per share (USD, net of fee) to admit a trade |
+| `MAX_SPREAD_BPS` | `300` | Max top-of-book spread (bps of mid) before skipping |
+| `EV_GATE_ENABLED` | `true` | Kill switch for the EV gate (spread filter still fires) |
+| `ENTRY_OFFSET_SECS` | `10` | Suppress orders within this many seconds of the window boundary |
+| `BOOK_STALENESS_MS` | `2000` | Max age of a cached book entry |
+| `PREWARM_LEAD_SECS` | `30` | Lead time to pre-subscribe to the next window's token IDs |
+| `PREFLIGHT_ENABLED` | `true` | Startup wallet balance/allowance pre-flight check |
+| `DRY_RUN` | `false` | Paper-trading mode (no live orders; scores into `dry_run_results`) |
+| `BOOTSTRAP_ON_EMPTY` | `true` | On startup, train any missing per-symbol models before entering the live loop |
+| `COINALYZE_API_KEY` | — | Needed only for `backfill-coinalyze` |
+| `POLYMARKET_API_URL` / `GAMMA_API_URL` / `WSS_URL` / `OKX_WS_URL` | public endpoints | API/WebSocket endpoints |
 
 ---
 
